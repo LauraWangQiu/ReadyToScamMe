@@ -330,7 +330,7 @@
         </div>
 
         <div class="video-container">
-            <video id="video" autoplay playsinline></video>
+            <video id="video" autoplay playsinline aria-label="Live camera feed for face scan demonstration"></video>
             <div class="scan-overlay">
                 <div class="scan-line" id="scanLine"></div>
                 <div class="face-frame" id="faceFrame"></div>
@@ -344,9 +344,9 @@
         <div class="scan-status" id="scanStatus">Ready to begin</div>
 
         <div class="controls">
-            <button class="btn-start" id="startBtn" onclick="startScan()">Start Scan</button>
-            <button class="btn-pause" id="pauseBtn" onclick="pauseScan()" disabled>Pause</button>
-            <button class="btn-export" id="exportBtn" onclick="exportData()" disabled>Export Demo Data</button>
+            <button class="btn-start" id="startBtn">Start Scan</button>
+            <button class="btn-pause" id="pauseBtn" disabled>Pause</button>
+            <button class="btn-export" id="exportBtn" disabled>Export Demo Data</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -425,7 +425,7 @@
                 }, 100);
                 
             } catch (error) {
-                console.error('Camera access error:', error);
+                console.error('Camera access error:', error.name, error.message);
                 showMessage('Camera access denied or unavailable. Please check your browser permissions.', 'error');
                 scanStatus.textContent = 'Camera access failed';
                 resetUI();
@@ -492,15 +492,19 @@
             const dataStr = JSON.stringify(mockData, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'demo-face-scan-data.json';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
             
-            showMessage('Demo data exported! Check your downloads folder for "demo-face-scan-data.json"', 'success');
+            try {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'demo-face-scan-data.json';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showMessage('Demo data exported! Check your downloads folder for "demo-face-scan-data.json"', 'success');
+            } finally {
+                URL.revokeObjectURL(url);
+            }
         }
 
         function showMessage(text, type) {
@@ -523,6 +527,11 @@
                 stream.getTracks().forEach(track => track.stop());
             }
         });
+
+        // Attach event listeners to buttons
+        startBtn.addEventListener('click', startScan);
+        pauseBtn.addEventListener('click', pauseScan);
+        exportBtn.addEventListener('click', exportData);
     </script>
 </body>
 </html>
