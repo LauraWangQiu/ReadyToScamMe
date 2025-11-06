@@ -1,537 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Scan Demo</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 100%;
-            padding: 30px;
-            position: relative;
-        }
-
-        .demo-badge {
-            background: #ff6b6b;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.02);
-            }
-        }
-
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .consent-box {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-
-        .consent-box h2 {
-            color: #667eea;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .consent-box p {
-            color: #555;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-
-        .consent-box ul {
-            margin-left: 20px;
-            color: #555;
-            line-height: 1.8;
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto 20px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #000;
-        }
-
-        #video {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            box-shadow: 0 0 20px #00ff00;
-            top: 0;
-            display: none;
-        }
-
-        .scan-line.active {
-            display: block;
-            animation: scan 2s linear infinite;
-        }
-
-        @keyframes scan {
-            0% {
-                top: 0;
-            }
-            100% {
-                top: 100%;
-            }
-        }
-
-        .face-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px;
-            height: 300px;
-            border: 3px solid #00ff00;
-            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-            display: none;
-            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
-        }
-
-        .face-frame.active {
-            display: block;
-            animation: frameGlow 1.5s ease-in-out infinite;
-        }
-
-        @keyframes frameGlow {
-            0%, 100% {
-                opacity: 0.6;
-                box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
-            }
-            50% {
-                opacity: 1;
-                box-shadow: 0 0 50px rgba(0, 255, 0, 0.8);
-            }
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 12px 30px;
-            font-size: 16px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .btn-start {
-            background: #00c853;
-            color: white;
-        }
-
-        .btn-start:hover {
-            background: #00a844;
-        }
-
-        .btn-pause {
-            background: #ff9800;
-            color: white;
-        }
-
-        .btn-pause:hover {
-            background: #e68900;
-        }
-
-        .btn-export {
-            background: #2196f3;
-            color: white;
-        }
-
-        .btn-export:hover {
-            background: #0b7dda;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .message {
-            text-align: center;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-            display: block;
-        }
-
-        .scan-status {
-            text-align: center;
-            font-size: 18px;
-            color: #666;
-            margin-top: 15px;
-            min-height: 30px;
-        }
-
-        .scan-status.scanning {
-            color: #00c853;
-            font-weight: bold;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 15px;
-            display: none;
-        }
-
-        .progress-bar.active {
-            display: block;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00c853, #00ff88);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .info-section {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .info-section h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
-        }
-
-        .info-section p {
-            color: #555;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Face Scan (full view)</title>
+  <style>
+    /* Full-viewport face-scan styles: minimal chrome, large video, overlay animations */
+    html,body{height:100%;margin:0}
+    body{font-family:Segoe UI,system-ui,Arial;background:#000;color:#fff}
+    .fullscreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+    video{width:100%;height:100%;object-fit:cover}
+    .overlay{position:absolute;inset:0;pointer-events:none}
+    .face-frame{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;height:380px;border:3px solid rgba(0,255,0,.9);border-radius:50%/60%;box-shadow:0 0 40px rgba(0,255,0,.35);opacity:0;animation:framePulse 1.5s ease-in-out infinite}
+    @keyframes framePulse{0%{opacity:.6;box-shadow:0 0 30px rgba(0,255,0,.25)}50%{opacity:1;box-shadow:0 0 60px rgba(0,255,0,.45)}100%{opacity:.6}}
+    .scan-line{position:absolute;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent,#00ff66,transparent);box-shadow:0 0 30px #00ff66;animation:scan 2s linear infinite;opacity:0.9}
+    @keyframes scan{0%{top:5%}100%{top:95%}}
+    /* Next button shown only after detection */
+    .next-button{position:fixed;left:50%;transform:translateX(-50%);bottom:6vh;padding:14px 28px;border-radius:999px;border:none;background:#00c853;color:#012;font-weight:700;font-size:18px;cursor:pointer;display:none;z-index:50}
+    .next-button.show{display:block}
+    /* Next view (hidden until Next clicked) */
+    .next-view{position:fixed;inset:0;background:linear-gradient(135deg,#0b1220,#14233a);display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;padding:20px}
+    .next-view.show{display:flex}
+    .scanned-value{margin-top:14px;padding:10px 14px;background:rgba(255,255,255,.06);border-radius:8px}
+    .message{position:fixed;left:50%;transform:translateX(-50%);top:4vh;background:rgba(255,255,255,.06);padding:8px 12px;border-radius:8px;font-size:14px}
+  /* Payment success icon */
+  .success-icon{width:128px;height:128px;border-radius:50%;background:linear-gradient(180deg,#00e676,#00c853);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(0,200,83,.25)}
+  .success-icon svg{width:72px;height:72px;fill:#fff}
+  .success-title{margin-top:18px;font-size:22px;font-weight:700;color:#e8fff0}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="demo-badge">
-            ⚠️ DEMO — NO REAL PAYMENT ⚠️
-        </div>
-
-        <h1>Face Scan Demo</h1>
-
-        <div class="consent-box">
-            <h2>📋 Consent & Privacy Notice</h2>
-            <p><strong>Before proceeding, please read and understand:</strong></p>
-            <ul>
-                <li>This is a <strong>demonstration only</strong> - no actual payment processing occurs</li>
-                <li>Your camera access is requested solely to display a live video preview</li>
-                <li>All video processing happens <strong>locally in your browser</strong></li>
-                <li>No video data, images, or personal information is sent to any server</li>
-                <li>No data is stored or recorded</li>
-                <li>You can deny camera access and the demo will show an error message</li>
-                <li>You can revoke camera access at any time through your browser settings</li>
-            </ul>
-            <p style="margin-top: 10px;"><em>By clicking "Start Scan", you consent to camera access for this demonstration.</em></p>
-        </div>
-
-        <div class="video-container">
-            <video id="video" autoplay playsinline aria-label="Live camera feed for face scan demonstration"></video>
-            <div class="scan-overlay">
-                <div class="scan-line" id="scanLine"></div>
-                <div class="face-frame" id="faceFrame"></div>
-            </div>
-        </div>
-
-        <div class="progress-bar" id="progressBar">
-            <div class="progress-fill" id="progressFill"></div>
-        </div>
-
-        <div class="scan-status" id="scanStatus">Ready to begin</div>
-
-        <div class="controls">
-            <button class="btn-start" id="startBtn">Start Scan</button>
-            <button class="btn-pause" id="pauseBtn" disabled>Pause</button>
-            <button class="btn-export" id="exportBtn" disabled>Export Demo Data</button>
-        </div>
-
-        <div id="message" class="message"></div>
-
-        <div class="info-section">
-            <h3>ℹ️ How This Demo Works</h3>
-            <p>
-                This demonstration simulates a face-scanning interface similar to what might be used in biometric payment systems.
-                When you click "Start Scan", your browser will request camera permission. Once granted, you'll see your camera feed
-                with animated scanning effects. After a few seconds, a mock "success" message will appear. The "Export" button 
-                generates a sample JSON file with simulated (fake) scan data. Remember: this is purely educational and no real 
-                processing, authentication, or payment occurs.
-            </p>
-        </div>
+  <!-- Fullscreen scanning view (no header, no other buttons) -->
+  <div id="scanRoot" class="fullscreen">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="overlay">
+      <div id="scanLine" class="scan-line" style="top:10%"></div>
+      <div id="faceFrame" class="face-frame"></div>
     </div>
+    <button id="nextBtn" class="next-button" aria-hidden="true">Next</button>
+    <div id="topMessage" class="message">Requesting camera permission...</div>
+  </div>
 
-    <script>
-        let stream = null;
-        let isScanning = false;
-        let isPaused = false;
-        let scanProgress = 0;
-        let scanInterval = null;
+  <!-- Simple next view shown after clicking Next -->
+  <div id="nextView" class="next-view" role="dialog" aria-modal="true">
+    <div class="success-icon" aria-hidden="true">
+      <!-- Checkmark SVG -->
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9.00039 16.172L4.82839 12L3.41439 13.414L9.00039 19L21.0004 7L19.5864 5.586L9.00039 16.172Z"/>
+      </svg>
+    </div>
+    <div class="success-title">Payment Proceeded</div>
+  </div>
 
-        const video = document.getElementById('video');
-        const scanLine = document.getElementById('scanLine');
-        const faceFrame = document.getElementById('faceFrame');
-        const scanStatus = document.getElementById('scanStatus');
-        const message = document.getElementById('message');
-        const startBtn = document.getElementById('startBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const progressBar = document.getElementById('progressBar');
-        const progressFill = document.getElementById('progressFill');
+  <script>
+    // Behavior:
+    // - Full-page camera request on load
+    // - If BarcodeDetector available, detect real codes; otherwise fallback to simulated timer
+    // - Show animated face-frame + scan-line while scanning
+    // - Reveal single "Next" button after detection; clicking it hides camera and shows next view
 
-        async function startScan() {
-            try {
-                showMessage('Requesting camera access...', 'info');
-                
-                // Request camera access
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: 'user'
-                    } 
-                });
-                
-                video.srcObject = stream;
-                
-                // Update UI
-                showMessage('Camera access granted! Starting scan...', 'success');
-                startBtn.disabled = true;
-                pauseBtn.disabled = false;
-                exportBtn.disabled = true;
-                
-                // Start scanning animation
-                isScanning = true;
-                isPaused = false;
-                scanProgress = 0;
-                progressBar.classList.add('active');
-                scanLine.classList.add('active');
-                faceFrame.classList.add('active');
-                scanStatus.textContent = 'Scanning...';
-                scanStatus.classList.add('scanning');
-                
-                // Simulate scan progress
-                scanInterval = setInterval(() => {
-                    if (!isPaused && scanProgress < 100) {
-                        scanProgress += 2;
-                        progressFill.style.width = scanProgress + '%';
-                        
-                        if (scanProgress >= 100) {
-                            completeScan();
-                        }
-                    }
-                }, 100);
-                
-            } catch (error) {
-                console.error('Camera access error:', error.name, error.message);
-                showMessage('Camera access denied or unavailable. Please check your browser permissions.', 'error');
-                scanStatus.textContent = 'Camera access failed';
-                resetUI();
+    const video = document.getElementById('video');
+    const scanLine = document.getElementById('scanLine');
+    const faceFrame = document.getElementById('faceFrame');
+    const nextBtn = document.getElementById('nextBtn');
+    const topMessage = document.getElementById('topMessage');
+    const nextView = document.getElementById('nextView');
+    const scannedValueEl = document.getElementById('scannedValue');
+
+    let stream = null;
+    let detector = null;
+    let scanning = false;
+    let raf = null;
+    let detected = false;
+    let detectedValue = null;
+
+    window.addEventListener('DOMContentLoaded', init);
+
+    async function init(){
+      topMessage.textContent = 'Requesting camera permission...';
+      // Prepare BarcodeDetector if available
+      if ('BarcodeDetector' in window) {
+        try {
+          const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : ['qr_code','ean_13','code_128'];
+          detector = new BarcodeDetector({formats: formats && formats.length ? formats : ['qr_code']});
+        } catch (e){
+          console.warn('BarcodeDetector init failed', e);
+          detector = null;
+        }
+      }
+
+      startCamera();
+    }
+
+    async function startCamera(){
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}}});
+        video.srcObject = stream;
+        await video.play();
+
+        topMessage.textContent = 'Scanning...';
+        faceFrame.style.opacity = '1';
+        scanLine.style.display = 'block';
+
+        // Start detection loop
+        if (detector) startDetectLoop();
+        else startSimulatedScan();
+
+      } catch (err){
+        console.error('Camera start failed', err);
+        topMessage.textContent = 'Camera permission denied or not available.';
+      }
+    }
+
+    // Real detection using BarcodeDetector
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    async function startDetectLoop(){
+      scanning = true;
+
+      async function frame(){
+        if (!scanning) return;
+        try{
+          const w = video.videoWidth || 640;
+          const h = video.videoHeight || 480;
+          if (w && h){
+            canvas.width = w; canvas.height = h;
+            ctx.drawImage(video,0,0,w,h);
+            let results = [];
+            try{
+              results = await detector.detect(canvas);
+            }catch(e){
+              try{ results = await detector.detect(video); }catch(e2){ /* ignore */ }
             }
-        }
-
-        function pauseScan() {
-            if (!isScanning) return;
-            
-            isPaused = !isPaused;
-            
-            if (isPaused) {
-                pauseBtn.textContent = 'Resume';
-                scanLine.classList.remove('active');
-                scanStatus.textContent = 'Scan paused';
-                scanStatus.classList.remove('scanning');
-                showMessage('Scan paused. Click Resume to continue.', 'info');
-            } else {
-                pauseBtn.textContent = 'Pause';
-                scanLine.classList.add('active');
-                scanStatus.textContent = 'Scanning...';
-                scanStatus.classList.add('scanning');
-                showMessage('Scan resumed...', 'info');
+            if (results && results.length){
+              const v = results[0].rawValue || results[0].raw_value || JSON.stringify(results[0]);
+              onDetected(v);
+              return;
             }
-        }
+          }
+        }catch(e){console.warn('detect frame error',e)}
+        raf = requestAnimationFrame(frame);
+      }
 
-        function completeScan() {
-            clearInterval(scanInterval);
-            scanLine.classList.remove('active');
-            faceFrame.classList.remove('active');
-            isScanning = false;
-            
-            scanStatus.textContent = '✅ Scan Complete!';
-            scanStatus.classList.remove('scanning');
-            scanStatus.style.color = '#00c853';
-            
-            showMessage('🎉 Mock Scan Success! Face scan simulation completed. (This is a demo - no actual data was captured or processed)', 'success');
-            
-            pauseBtn.disabled = true;
-            exportBtn.disabled = false;
-            startBtn.disabled = false;
-            startBtn.textContent = 'Scan Again';
-        }
+      raf = requestAnimationFrame(frame);
+    }
 
-        function exportData() {
-            // Generate mock data (completely fake, for demonstration only)
-            const mockData = {
-                demo: true,
-                disclaimer: "This is simulated data for demonstration purposes only. No real biometric data was captured.",
-                timestamp: new Date().toISOString(),
-                scanDuration: "5.0 seconds",
-                status: "mock_success",
-                mockBiometricPoints: [
-                    { id: 1, x: 0.42, y: 0.38, type: "left_eye" },
-                    { id: 2, x: 0.58, y: 0.38, type: "right_eye" },
-                    { id: 3, x: 0.50, y: 0.52, type: "nose_tip" },
-                    { id: 4, x: 0.50, y: 0.68, type: "mouth_center" }
-                ],
-                mockConfidenceScore: 0.9523,
-                note: "All values are randomly generated for demo purposes"
-            };
-            
-            // Create and download JSON file
-            const dataStr = JSON.stringify(mockData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            
-            try {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'demo-face-scan-data.json';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showMessage('Demo data exported! Check your downloads folder for "demo-face-scan-data.json"', 'success');
-            } finally {
-                URL.revokeObjectURL(url);
-            }
-        }
+    // Fallback simulated scan (keeps the same face-scan visuals)
+    function startSimulatedScan(){
+      scanning = true;
+      // After ~4 seconds, mark as detected
+      setTimeout(()=>{
+        if (!detected) onDetected('SIMULATED-FACE-SCAN');
+      }, 4000);
+    }
 
-        function showMessage(text, type) {
-            message.textContent = text;
-            message.className = 'message ' + type;
-        }
+    function onDetected(value){
+      detected = true;
+      detectedValue = value;
+      scannedValueEl.textContent = value;
+      topMessage.textContent = 'Detected ✓';
+      // show Next button
+      // nextBtn.classList.add('show');
+      // nextBtn.setAttribute('aria-hidden','false');
+      // stop camera to save resources
+      stopScanning();
+      // Immediately go to the next view (short delay for a smoother transition)
+      nextBtn.classList.remove('show');
+      nextBtn.setAttribute('aria-hidden','true');
+      setTimeout(() => {
+        document.getElementById('scanRoot').style.display = 'none';
+        nextView.classList.add('show');
+      }, 300);
+    }
 
-        function resetUI() {
-            startBtn.disabled = false;
-            pauseBtn.disabled = true;
-            exportBtn.disabled = true;
-            scanLine.classList.remove('active');
-            faceFrame.classList.remove('active');
-            progressBar.classList.remove('active');
-        }
+    function stopScanning(){
+      scanning = false;
+      if (raf) cancelAnimationFrame(raf);
+      if (stream){
+        stream.getTracks().forEach(t=>t.stop());
+        stream = null;
+      }
+      // pause video
+      try{ video.pause(); video.srcObject = null;}catch(e){}
+      scanLine.style.display = 'none';
+    }
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        });
+    nextBtn.addEventListener('click', ()=>{
+      // go to next view
+      document.getElementById('scanRoot').style.display = 'none';
+      nextView.classList.add('show');
+      // scannedValue is already set
+    });
 
-        // Attach event listeners to buttons
-        startBtn.addEventListener('click', startScan);
-        pauseBtn.addEventListener('click', pauseScan);
-        exportBtn.addEventListener('click', exportData);
-    </script>
+    // Cleanup on unload
+    window.addEventListener('beforeunload', ()=>{ stopScanning(); });
+  </script>
 </body>
 </html>
