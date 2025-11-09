@@ -161,17 +161,10 @@
       scannedValueEl.textContent = value;
       topMessage.textContent = 'Detected ✓';
       // show Next button
-      // nextBtn.classList.add('show');
-      // nextBtn.setAttribute('aria-hidden','false');
+      nextBtn.classList.add('show');
+      nextBtn.setAttribute('aria-hidden','false');
       // stop camera to save resources
       stopScanning();
-      // Immediately go to the next view (short delay for a smoother transition)
-      nextBtn.classList.remove('show');
-      nextBtn.setAttribute('aria-hidden','true');
-      setTimeout(() => {
-        document.getElementById('scanRoot').style.display = 'none';
-        nextView.classList.add('show');
-      }, 150);
     }
 
     function stopScanning(){
