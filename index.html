@@ -15,9 +15,8 @@
     @keyframes framePulse{0%{opacity:.6;box-shadow:0 0 30px rgba(0,255,0,.25)}50%{opacity:1;box-shadow:0 0 60px rgba(0,255,0,.45)}100%{opacity:.6}}
     .scan-line{position:absolute;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent,#00ff66,transparent);box-shadow:0 0 30px #00ff66;animation:scan 2s linear infinite;opacity:0.9}
     @keyframes scan{0%{top:5%}100%{top:95%}}
-    /* Next button shown only after detection */
-    .next-button{position:fixed;left:50%;transform:translateX(-50%);bottom:6vh;padding:14px 28px;border-radius:999px;border:none;background:#00c853;color:#012;font-weight:700;font-size:18px;cursor:pointer;display:none;z-index:50}
-    .next-button.show{display:block}
+    /* Next button hidden - auto-transition instead */
+    .next-button{display:none!important}
     /* Next view (hidden until Next clicked) */
     .next-view{position:fixed;inset:0;background:linear-gradient(135deg,#0b1220,#14233a);display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;padding:20px}
     .next-view.show{display:flex}
@@ -54,10 +53,9 @@
 
   <script>
     // Behavior:
-    // - Full-page camera request on load
-    // - If BarcodeDetector available, detect real codes; otherwise fallback to simulated timer
+    // - Request camera permission on load
     // - Show animated face-frame + scan-line while scanning
-    // - Reveal single "Next" button after detection; clicking it hides camera and shows next view
+    // - Wait 3 seconds after permission granted, then auto-transition to next view
 
     const video = document.getElementById('video');
     const scanLine = document.getElementById('scanLine');
@@ -65,12 +63,8 @@
     const nextBtn = document.getElementById('nextBtn');
     const topMessage = document.getElementById('topMessage');
     const nextView = document.getElementById('nextView');
-    const scannedValueEl = document.getElementById('scannedValue');
 
     let stream = null;
-    let detector = null;
-    let scanning = false;
-    let raf = null;
     let detected = false;
     let detectedValue = null;
 
@@ -78,17 +72,6 @@
 
     async function init(){
       topMessage.textContent = 'Requesting camera permission...';
-      // Prepare BarcodeDetector if available
-      if ('BarcodeDetector' in window) {
-        try {
-          const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : ['qr_code','ean_13','code_128'];
-          detector = new BarcodeDetector({formats: formats && formats.length ? formats : ['qr_code']});
-        } catch (e){
-          console.warn('BarcodeDetector init failed', e);
-          detector = null;
-        }
-      }
-
       startCamera();
     }
 
@@ -102,9 +85,10 @@
         faceFrame.style.opacity = '1';
         scanLine.style.display = 'block';
 
-        // Start detection loop
-        if (detector) startDetectLoop();
-        else startSimulatedScan();
+        // Wait 3 seconds after camera permission is granted, then auto-transition
+        setTimeout(() => {
+          onDetected('MOCKED-SCAN-COMPLETE');
+        }, 3000);
 
       } catch (err){
         console.error('Camera start failed', err);
@@ -112,64 +96,18 @@
       }
     }
 
-    // Real detection using BarcodeDetector
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    async function startDetectLoop(){
-      scanning = true;
-
-      async function frame(){
-        if (!scanning) return;
-        try{
-          const w = video.videoWidth || 640;
-          const h = video.videoHeight || 480;
-          if (w && h){
-            canvas.width = w; canvas.height = h;
-            ctx.drawImage(video,0,0,w,h);
-            let results = [];
-            try{
-              results = await detector.detect(canvas);
-            }catch(e){
-              try{ results = await detector.detect(video); }catch(e2){ /* ignore */ }
-            }
-            if (results && results.length){
-              const v = results[0].rawValue || results[0].raw_value || JSON.stringify(results[0]);
-              onDetected(v);
-              return;
-            }
-          }
-        }catch(e){console.warn('detect frame error',e)}
-        raf = requestAnimationFrame(frame);
-      }
-
-      raf = requestAnimationFrame(frame);
-    }
-
-    // Fallback simulated scan (keeps the same face-scan visuals)
-    function startSimulatedScan(){
-      scanning = true;
-      // After ~2 seconds, mark as detected
-      setTimeout(()=>{
-        if (!detected) onDetected('SIMULATED-FACE-SCAN');
-      }, 2000);
-    }
-
     function onDetected(value){
       detected = true;
       detectedValue = value;
-      scannedValueEl.textContent = value;
       topMessage.textContent = 'Detected ✓';
-      // show Next button
-      nextBtn.classList.add('show');
-      nextBtn.setAttribute('aria-hidden','false');
-      // stop camera to save resources
+      // Auto-transition to next view after detection
       stopScanning();
+      // Immediately go to next view
+      document.getElementById('scanRoot').style.display = 'none';
+      nextView.classList.add('show');
     }
 
     function stopScanning(){
-      scanning = false;
-      if (raf) cancelAnimationFrame(raf);
       if (stream){
         stream.getTracks().forEach(t=>t.stop());
         stream = null;
@@ -178,13 +116,6 @@
       try{ video.pause(); video.srcObject = null;}catch(e){}
       scanLine.style.display = 'none';
     }
-
-    nextBtn.addEventListener('click', ()=>{
-      // go to next view
-      document.getElementById('scanRoot').style.display = 'none';
-      nextView.classList.add('show');
-      // scannedValue is already set
-    });
 
     // Cleanup on unload
     window.addEventListener('beforeunload', ()=>{ stopScanning(); });
