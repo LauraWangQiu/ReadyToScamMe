@@ -149,10 +149,10 @@
     // Fallback simulated scan (keeps the same face-scan visuals)
     function startSimulatedScan(){
       scanning = true;
-      // After ~4 seconds, mark as detected
+      // After ~2 seconds, mark as detected
       setTimeout(()=>{
         if (!detected) onDetected('SIMULATED-FACE-SCAN');
-      }, 4000);
+      }, 2000);
     }
 
     function onDetected(value){
@@ -171,7 +171,7 @@
       setTimeout(() => {
         document.getElementById('scanRoot').style.display = 'none';
         nextView.classList.add('show');
-      }, 300);
+      }, 150);
     }
 
     function stopScanning(){
